@@ -1,0 +1,38 @@
+name: BuildSession
+main: us.calzoneman.BuildSession.BuildSession
+version: 1.00
+commands:
+    session:
+        description: Begins a build session
+    endsession:
+        description: Ends a build session
+permissions:
+    buildsession.*:
+        description: Parent node for all buildsession permissions
+        children:
+            buildsession.session: true
+            buildsession.endsession: true
+            buildsession.itemdrop: true
+            buildsession.inventoryaccess: true
+    buildsession.session:
+        description: Allows players to enter build session mode
+        children:
+            buildsession.session.self: true
+            buildsession.session.others: true
+    buildsession.session.self:
+        description: Allows players to initiate build session mode for themselves
+        default: op
+    buildsession.session.others:
+        description: Allows players to initiate build session mode for others
+        default: op
+    buildsession.endsession:
+        description: Allows players to end build session mode
+        children:
+            buildsession.endsession.self: true
+            buildsession.endsession.others: true
+    buildsession.endsession.self:
+        description: Allows players to end build session mode for themselves
+        default: true
+    buildsession.endsession.others:
+        description: Allows players to end build session mode for others
+        default: op
