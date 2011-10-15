@@ -5,6 +5,7 @@ package us.calzoneman.BuildSession;
  *
  * @author Calvin
  */
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -23,11 +24,16 @@ public class BuildSessionPlayerListener extends PlayerListener {
         if(event.getClickedBlock() != null && !event.getPlayer().hasPermission("buildsession.inventoryaccess")) {
             switch(event.getClickedBlock().getTypeId()) {
                 case 23:
-                case 54:
                 case 61:
                 case 62:
                     event.setCancelled(true);
                     event.getPlayer().sendMessage("You are not allowed to access storage blocks while in Build Session mode!");
+                    break;
+                case 54:
+                    if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
+                        event.setCancelled(true);
+                        event.getPlayer().sendMessage("You are not allowed to access storage blocks while in Build Session mode!");
+                    }
                     break;
                 default:
                     break;
