@@ -36,8 +36,11 @@ public class BuildSession extends JavaPlugin {
     public void onEnable() {
         PluginManager pm = Bukkit.getServer().getPluginManager();
         BuildSessionPlayerListener pl = new BuildSessionPlayerListener(this);
+        BuildSessionBlockListener bl = new BuildSessionBlockListener(this);
         pm.registerEvent(Type.PLAYER_INTERACT, pl, Priority.High, this);
         pm.registerEvent(Type.PLAYER_DROP_ITEM, pl, Priority.Normal, this);
+        pm.registerEvent(Type.BLOCK_BREAK, bl, Priority.Normal, this);
+        pm.registerEvent(Type.BLOCK_PLACE, bl, Priority.Normal, this);
         loadSessions("plugins/BuildSession/sessions.txt");
         loadInventories("plugins/BuildSession/inv/");
         log.info("[BuildSession] Plugin Enabled");
