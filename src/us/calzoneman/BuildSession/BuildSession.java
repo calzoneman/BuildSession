@@ -11,48 +11,43 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.PrintWriter;
-import java.io.FileWriter;
-import java.io.File;
-import org.bukkit.GameMode;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
 
 public class BuildSession extends JavaPlugin {
     public static final Logger log = Logger.getLogger("Minecraft");
-    
-    private ArrayList<String> sessions = new ArrayList<String>(); // Stores who is in a session
-    private HashMap<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>(); // Stores pre-session inventories
-    
+
+    private HashMap<String, Session> sessions = new HashMap<String, Session>();
+    private BuildSessionSaver saver;
+
     @Override
     public void onEnable() {
         PluginManager pm = Bukkit.getServer().getPluginManager();
         BuildSessionPlayerListener pl = new BuildSessionPlayerListener(this);
         BuildSessionBlockListener bl = new BuildSessionBlockListener(this);
+        this.saver = new BuildSessionSaver(this);
         pm.registerEvent(Type.PLAYER_INTERACT, pl, Priority.High, this);
+        pm.registerEvent(Type.PLAYER_INTERACT_ENTITY, pl, Priority.High, this);
+        pm.registerEvent(Type.PLAYER_JOIN, pl, Priority.Monitor, this);
         pm.registerEvent(Type.PLAYER_DROP_ITEM, pl, Priority.Normal, this);
         pm.registerEvent(Type.BLOCK_BREAK, bl, Priority.Normal, this);
         pm.registerEvent(Type.BLOCK_PLACE, bl, Priority.Normal, this);
-        loadSessions("plugins/BuildSession/sessions.txt");
-        loadInventories("plugins/BuildSession/inv/");
+        sessions = saver.load("plugins/BuildSession/sessions.txt");
+        // Schedule a save every 2 minutes in case of server failure
+        Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, new BuildSessionSaver(this), 2400, 2400);
         log.info("[BuildSession] Plugin Enabled");
     }
-    
+
     @Override
     public void onDisable() {
-        saveSessions("plugins/BuildSession/sessions.txt");
-        saveInventories("plugins/BuildSession/inv/");
+        saver.run();
         log.info("[BuildSession] Plugin Disabled");
     }
-    
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(label.equals("session")) {
@@ -133,143 +128,25 @@ public class BuildSession extends JavaPlugin {
         }
         return true;
     }
-    
+
+    public HashMap<String, Session> getSessions() {
+        return this.sessions;
+    }
+
     public void initSession(Player ply) {
-        sessions.add(ply.getName());
-        inventories.put(ply.getName(), ply.getInventory().getContents());
-        ply.getInventory().clear();
-        ply.setGameMode(GameMode.CREATIVE);
-        ply.sendMessage("You are in Build Session mode.  You may leave Build Session mode at any time by executing the command /endsession");
-    } 
-    
+        Session s = new Session(ply);
+        if(s.start()) {
+            sessions.put(ply.getName(), s);
+        }
+    }
+
     public boolean sessionExists(String name) {
-        return sessions.contains(name);
+        return sessions.containsKey(name);
     }
-    
+
     public void endSession(Player ply) {
-        sessions.remove(ply.getName());
-        ply.getInventory().setContents(inventories.get(ply.getName()));
-        inventories.remove(ply.getName());
-        ply.setGameMode(GameMode.SURVIVAL);
-        ply.sendMessage("You have left Build Session mode.  Your original inventory has been restored.");
-    }
-    
-    public void saveSessions(String filename) {
-        try {
-            PrintWriter out = new PrintWriter(new FileWriter(filename));
-            for(String s : sessions) {
-                out.println(s);
-            }
-            out.flush();
-            out.close();
-            log.info("[BuildSession] Saved sessions to disk");
-        }
-        catch(Exception e) {
-            log.severe("[BuildSession] Failed to flush sessions to disk: ");
-            log.severe(e.toString());
-        }
-        
-    }
-    
-    public void loadSessions(String filename) {
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(filename));
-            String line = in.readLine();
-            while(line != null) {
-                if(!line.equals("")) {
-                    sessions.add(line);
-                }
-                line = in.readLine();
-            }
-            in.close();
-            log.info("[BuildSession] Loaded session data from disk");
-        }
-        catch(Exception e) {
-            log.severe("[BuildSession] Failed to load session data: ");
-            log.severe(e.toString());
+        if(sessionExists(ply.getName()) && sessions.get(ply.getName()).end()) {
+            sessions.remove(ply.getName());
         }
     }
-    
-    public void saveInventories(String foldername) {
-        try {
-            // Clean out the folder first
-            File dir = new File(foldername);
-            for(File f : dir.listFiles()) {
-                f.delete();
-            }
-            for(String s : inventories.keySet()) {
-                PrintWriter out = new PrintWriter(new FileWriter(foldername + s + ".inv"));
-                for(String str : serializeInventory(inventories.get(s))) {
-                    out.println(str);
-                }
-                out.flush();
-                out.close();
-            }
-            log.info("[BuildSession] Saved inventories to disk");
-        }
-        catch(Exception e) {
-            log.severe("[BuildSession] Failed to flush inventories to disk: ");
-            log.severe(e.toString());
-            log.severe(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    public void loadInventories(String foldername) {
-        try {
-            File dir = new File(foldername);
-            String[] files = dir.list();
-            for(String file : files) {
-                if(file.endsWith(".inv")) {
-                    BufferedReader in = new BufferedReader(new FileReader(foldername + file));
-                    String line = in.readLine();
-                    ArrayList<String> lines = new ArrayList<String>();
-                    while(line != null) {
-                        if(line.equals("")) continue;
-                        lines.add(line);
-                        line = in.readLine();
-                    }
-                    ItemStack[] inventory = deserializeInventory(lines);
-                    inventories.put(file.substring(0, file.indexOf(".inv")), inventory);
-                }
-            }
-            log.info("[BuildSession] Loaded inventories from disk");
-        }
-        catch(Exception e) {
-            log.severe("[BuildSession] Failed to load inventories from disk: ");
-            log.severe(e.toString());
-        }
-    }
-    
-    public ArrayList<String> serializeInventory(ItemStack[] it) {
-        ArrayList<String> result = new ArrayList<String>();
-        for(ItemStack i : it) {
-            if(i == null || i.getAmount() == 0) continue;
-            result.add(i.getTypeId() + ":" + (i.getData() != null ? i.getData().getData() : 0) + ";" + i.getDurability() + ";" + i.getAmount());
-        }
-        return result;
-    }
-    
-    public ItemStack[] deserializeInventory(ArrayList<String> serialized) {
-        ItemStack[] it = new ItemStack[36];
-        int i = 0;
-        try {
-            for(String s : serialized) {
-                String[] stuff = s.split(";");
-                if(stuff.length < 3) continue;
-                if(!stuff[0].contains(":")) continue;
-                String[] iddata = stuff[0].split(":");
-                ItemStack stack = new ItemStack(Integer.parseInt(iddata[0]), Integer.parseInt(stuff[2]), Short.parseShort(stuff[1]), Byte.parseByte(iddata[1]));
-                it[i] = stack;
-                i++;
-            }
-        }
-        catch(Exception e) {
-            log.severe("[BuildSession] Failed to deserialize inventory: ");
-            log.severe(e.toString());
-        }
-        return it;
-    }
-    
-    
 }

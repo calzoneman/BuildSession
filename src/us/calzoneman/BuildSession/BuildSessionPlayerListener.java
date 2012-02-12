@@ -5,42 +5,52 @@ package us.calzoneman.BuildSession;
  *
  * @author Calvin
  */
-import org.bukkit.event.block.Action;
+
+import org.bukkit.entity.StorageMinecart;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 
 public class BuildSessionPlayerListener extends PlayerListener {
     private BuildSession plugin;
-    
+
     public BuildSessionPlayerListener(BuildSession plugin) {
         this.plugin = plugin;
     }
-    
+
     @Override
     public void onPlayerInteract(PlayerInteractEvent event) {
         if(!plugin.sessionExists(event.getPlayer().getName())) return;
         if(event.getClickedBlock() != null && !event.getPlayer().hasPermission("buildsession.inventoryaccess")) {
             switch(event.getClickedBlock().getTypeId()) {
                 case 23:
+                case 54:
                 case 61:
                 case 62:
+                case 84:
                     event.setCancelled(true);
                     event.getPlayer().sendMessage("You are not allowed to access storage blocks while in Build Session mode!");
-                    break;
-                case 54:
-                    if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)){
-                        event.setCancelled(true);
-                        event.getPlayer().sendMessage("You are not allowed to access storage blocks while in Build Session mode!");
-                    }
                     break;
                 default:
                     break;
             }
         }
     }
-    
+
+    @Override
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        if(!plugin.sessionExists(event.getPlayer().getName())) return;
+        if(!event.getPlayer().hasPermission("buildsession.inventoryaccess")) {
+            if(event.getRightClicked() instanceof StorageMinecart) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("You are not allowed to access storage while in Build Session Mode");
+            }
+        }
+    }
+
     @Override
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         if(!plugin.sessionExists(event.getPlayer().getName())) return;
@@ -49,7 +59,15 @@ public class BuildSessionPlayerListener extends PlayerListener {
             event.getPlayer().sendMessage("You are not allowed to drop items while in Build Session mode!");
         }
     }
-    
+
+    @Override
+    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+        if(!plugin.sessionExists(event.getPlayer().getName())) return;
+        if(!event.getPlayer().hasPermission("buildsession.itemdrop")) {
+            event.setCancelled(true);
+        }
+    }
+
     @Override
     public void onPlayerJoin(PlayerJoinEvent event) {
         if(plugin.sessionExists(event.getPlayer().getName())) {
