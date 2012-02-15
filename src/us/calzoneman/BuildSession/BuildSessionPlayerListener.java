@@ -71,6 +71,7 @@ public class BuildSessionPlayerListener extends PlayerListener {
     @Override
     public void onPlayerJoin(PlayerJoinEvent event) {
         if(plugin.sessionExists(event.getPlayer().getName())) {
+            plugin.getSessions().get(event.getPlayer().getName()).setPlayer(event.getPlayer());
             event.getPlayer().sendMessage("You are in Build Session mode.  You may leave Build Session mode at any time by executing the command /endsession");
         }
     }

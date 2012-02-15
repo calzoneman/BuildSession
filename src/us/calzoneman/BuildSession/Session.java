@@ -23,6 +23,7 @@ public class Session {
 
     public Session(Player player) {
         this.player = player;
+        this.pname = player.getName();
     }
 
     public Session(String pname) {
@@ -94,7 +95,7 @@ public class Session {
                     inv.put(item);
                 }
             }
-            session.put("player", player.getName());
+            session.put("player", pname);
             session.put("start", startTime);
             session.put("inventory", inv);
         }
