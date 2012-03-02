@@ -1,6 +1,7 @@
 package us.calzoneman.BuildSession;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,38 +27,53 @@ public class BuildSessionSaver implements Runnable {
     }
     @Override
     public void run() {
-        save(plugin.getSessions(), "plugins/BuildSession/sessions.txt");
+        save(plugin.getSessions(), plugin.getDataFolder().getPath() + "sessions.txt");
     }
 
     public void save(HashMap<String, Session> sessions, String filename) {
         JSONObject all = new JSONObject();
+        if(!plugin.getDataFolder().exists()) {
+    		plugin.getDataFolder().mkdirs();
+    	}
         for(String key : sessions.keySet()) {
             try {
                 all.put(key, sessions.get(key).toJSONObject());
             }
             catch(JSONException ex) {
-                plugin.log.severe("JSON Save Error: ");
+                BuildSession.log.severe("JSON Save Error: ");
                 ex.printStackTrace();
             }
         }
         try {
+        	if(!new File(filename).exists()) {
+        		new File(filename).createNewFile();
+        	}
             PrintWriter pw = new PrintWriter(filename);
             pw.write(all.toString(4));
             pw.close();
         }
         catch (IOException ex) {
-            plugin.log.severe("Save Error: ");
+            BuildSession.log.severe("Save Error: ");
             ex.printStackTrace();
         }
         catch (JSONException ex) {
-            plugin.log.severe("JSON Error: ");
+            BuildSession.log.severe("JSON Error: ");
             ex.printStackTrace();
         }
     }
 
-    public HashMap<String, Session> load(String filename) {
+    @SuppressWarnings("unchecked")
+	public HashMap<String, Session> load(String filename) {
         HashMap<String, Session> sessions = new HashMap<String, Session>();
         try {
+        	if(!plugin.getDataFolder().exists()) {
+        		plugin.getDataFolder().mkdirs();
+        	    return sessions;
+        	}
+        	if(!new File(filename).exists()) {
+        		new File(filename).createNewFile();
+        		return sessions;
+        	}
             BufferedReader br = new BufferedReader(new FileReader(filename));
             String input = "";
             String line = "";
@@ -67,16 +83,16 @@ public class BuildSessionSaver implements Runnable {
             }
             br.close();
             JSONObject in = new JSONObject(input);
-            Iterator iter = in.keys();
+            Iterator<String> iter = (Iterator<String>) in.keys();
             while(iter.hasNext()) {
-                String pname = (String)iter.next();
+                String pname = iter.next();
                 Session s = new Session(pname);
                 s.loadJSONObject(in.getJSONObject(pname));
                 sessions.put(pname, s);
             }
         }
         catch(Exception ex) {
-            plugin.log.severe("Load error: ");
+            BuildSession.log.severe("Load error: ");
             ex.printStackTrace();
         }
         return sessions;
@@ -105,7 +121,7 @@ public class BuildSessionSaver implements Runnable {
             output = invArray.toString(4);
         }
         catch(JSONException ex) {
-            plugin.log.severe("JSON Error: ");
+            BuildSession.log.severe("JSON Error: ");
             ex.printStackTrace();
         }
 
@@ -115,7 +131,7 @@ public class BuildSessionSaver implements Runnable {
             pw.close();
         }
         catch(IOException ex) {
-            plugin.log.severe("Save Error: ");
+            BuildSession.log.severe("Save Error: ");
             ex.printStackTrace();
         }
     }
@@ -131,7 +147,7 @@ public class BuildSessionSaver implements Runnable {
             }
         }
         catch(IOException ex) {
-            plugin.log.severe("Load Error: ");
+            BuildSession.log.severe("Load Error: ");
             ex.printStackTrace();
         }
         ItemStack[] inventory = new ItemStack[36];
@@ -158,7 +174,7 @@ public class BuildSessionSaver implements Runnable {
             }
         }
         catch(JSONException ex) {
-            plugin.log.severe("JSON Load Error: ");
+            BuildSession.log.severe("JSON Load Error: ");
             ex.printStackTrace();
         }
         return inventory;

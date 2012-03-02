@@ -14,6 +14,8 @@ permissions:
             buildsession.endsession: true
             buildsession.itemdrop: true
             buildsession.inventoryaccess: true
+            buildsession.mobegg: true
+            buildsession.expbottle: true
     buildsession.session:
         description: Allows players to enter build session mode
         children:
@@ -36,3 +38,22 @@ permissions:
     buildsession.endsession.others:
         description: Allows players to end build session mode for others
         default: op
+    buildsession.inventoryaccess:
+        description: Allows players to access inventory blocks
+        default: false
+    buildsession.itemdrop:
+        description: Allows players to drop items
+        default: false
+    buildsession.expbottle:
+        description: Allows players to throw experience bottles
+        default: false
+    buildsession.mobegg:
+        description: Allows players to use monster eggs
+        default: false
+    buildsession.fireball:
+        description: Allows players to use fireballs
+        default: false
+    buildsession.endereye:
+        description: Allows players to use eyes of ender
+        default: false
+    

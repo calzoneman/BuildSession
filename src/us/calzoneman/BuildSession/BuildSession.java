@@ -7,6 +7,7 @@ package us.calzoneman.BuildSession;
  */
 
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.Command;
@@ -15,8 +16,18 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.logging.Logger;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.Event.Type;
+
+import org.bukkit.event.Event;
+import org.bukkit.event.EventException;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 
 public class BuildSession extends JavaPlugin {
     public static final Logger log = Logger.getLogger("Minecraft");
@@ -30,12 +41,40 @@ public class BuildSession extends JavaPlugin {
         BuildSessionPlayerListener pl = new BuildSessionPlayerListener(this);
         BuildSessionBlockListener bl = new BuildSessionBlockListener(this);
         this.saver = new BuildSessionSaver(this);
-        pm.registerEvent(Type.PLAYER_INTERACT, pl, Priority.High, this);
-        pm.registerEvent(Type.PLAYER_INTERACT_ENTITY, pl, Priority.High, this);
-        pm.registerEvent(Type.PLAYER_JOIN, pl, Priority.Monitor, this);
-        pm.registerEvent(Type.PLAYER_DROP_ITEM, pl, Priority.Normal, this);
-        pm.registerEvent(Type.BLOCK_BREAK, bl, Priority.Normal, this);
-        pm.registerEvent(Type.BLOCK_PLACE, bl, Priority.Normal, this);
+        EventExecutor ee = new EventExecutor() {
+			@Override
+			public void execute(Listener listener, Event event) throws EventException {
+				if(event instanceof BlockBreakEvent) {
+					((BuildSessionBlockListener) listener).onBlockBreak((BlockBreakEvent) event);
+				}
+				else if(event instanceof BlockPlaceEvent) {
+					((BuildSessionBlockListener) listener).onBlockPlace((BlockPlaceEvent) event);
+				}
+				else if(event instanceof PlayerInteractEvent) {
+					((BuildSessionPlayerListener) listener).onPlayerInteract((PlayerInteractEvent) event);
+				}
+				else if(event instanceof PlayerInteractEntityEvent) {
+					((BuildSessionPlayerListener) listener).onPlayerInteractEntity((PlayerInteractEntityEvent) event);
+				}
+				else if(event instanceof PlayerDropItemEvent) {
+					((BuildSessionPlayerListener) listener).onPlayerDropItem((PlayerDropItemEvent) event);
+				}
+				else if(event instanceof PlayerPickupItemEvent) {
+					((BuildSessionPlayerListener) listener).onPlayerPickupItem((PlayerPickupItemEvent) event);
+				}
+				else if(event instanceof PlayerJoinEvent) {
+					((BuildSessionPlayerListener) listener).onPlayerJoin((PlayerJoinEvent) event);
+				}
+			}
+		};
+		pm.registerEvent(BlockBreakEvent.class, bl, EventPriority.NORMAL, ee, this);
+		pm.registerEvent(BlockPlaceEvent.class, bl, EventPriority.NORMAL, ee, this);
+		pm.registerEvent(PlayerInteractEvent.class, pl, EventPriority.HIGH, ee, this);
+		pm.registerEvent(PlayerInteractEntityEvent.class, pl, EventPriority.HIGH, ee, this);
+		pm.registerEvent(PlayerDropItemEvent.class, pl, EventPriority.HIGH, ee, this);
+		pm.registerEvent(PlayerPickupItemEvent.class, pl, EventPriority.NORMAL, ee, this);
+		pm.registerEvent(PlayerJoinEvent.class, pl, EventPriority.NORMAL, ee, this);
+
         sessions = saver.load("plugins/BuildSession/sessions.txt");
         // Schedule a save every 2 minutes in case of server failure
         Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, new BuildSessionSaver(this), 2400, 2400);
