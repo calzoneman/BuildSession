@@ -1,6 +1,6 @@
 name: BuildSession
 main: us.calzoneman.BuildSession.BuildSession
-version: 1.10
+version: 1.20
 commands:
     session:
         description: Begins a build session

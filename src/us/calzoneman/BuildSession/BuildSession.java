@@ -75,7 +75,7 @@ public class BuildSession extends JavaPlugin {
 		pm.registerEvent(PlayerPickupItemEvent.class, pl, EventPriority.NORMAL, ee, this);
 		pm.registerEvent(PlayerJoinEvent.class, pl, EventPriority.NORMAL, ee, this);
 
-        sessions = saver.load("plugins/BuildSession/sessions.txt");
+        sessions = saver.load(getSavePath());
         // Schedule a save every 2 minutes in case of server failure
         Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, new BuildSessionSaver(this), 2400, 2400);
         log.info("[BuildSession] Plugin Enabled");
@@ -166,6 +166,10 @@ public class BuildSession extends JavaPlugin {
             }
         }
         return true;
+    }
+    
+    public String getSavePath() {
+    	return getDataFolder().getPath() + "/sessions.txt";
     }
 
     public HashMap<String, Session> getSessions() {

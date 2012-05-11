@@ -27,7 +27,7 @@ public class BuildSessionSaver implements Runnable {
     }
     @Override
     public void run() {
-        save(plugin.getSessions(), plugin.getDataFolder().getPath() + "sessions.txt");
+        save(plugin.getSessions(), plugin.getSavePath());
     }
 
     public void save(HashMap<String, Session> sessions, String filename) {
